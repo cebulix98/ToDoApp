@@ -39,7 +39,7 @@
                     </div>
                     <div>
                         <x-input-label for="priority" value="Priorytet" />
-                        <x-select name="priority" selected="low">
+                        <x-select name="priority">
                             <option value="low">{{__('validation.priority.low')}}</option>
                             <option value="medium">{{__('validation.priority.medium')}}</option>
                             <option value="high">{{__('validation.priority.high')}}</option>
@@ -48,7 +48,7 @@
                     </div>
                     <div>
                         <x-input-label for="status" value="Status" />
-                        <x-select name="status" selected="toDo">
+                        <x-select name="status">
                             <option value="toDo">{{__('validation.status.toDo')}}</option>
                             <option value="inProgress">{{__('validation.status.inProgress')}}</option>
                             <option value="done">{{__('validation.status.done')}}</option>

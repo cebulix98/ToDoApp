@@ -17,7 +17,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamp('deadline');
             $table->string('title', 255);
-            $table->text('description');
+            $table->text('description')->nullable();
             $table->enum('priority', ['low', 'medium', 'high']);
             $table->enum('status', ['toDo', 'inProgress', 'done']);
             $table->integer('user');

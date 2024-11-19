@@ -21,7 +21,7 @@ class TaskController extends Controller
     {
         $request->validate([
             'title' => ['string', 'required', 'max:255'],
-            'description' => ['string'],
+            'description' => ['string', 'nullable'],
             'deadline' => ['date', 'required'],
             'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
             'status' => ['required', Rule::in(['toDo', 'inProgress', 'done'])]
@@ -72,14 +72,33 @@ class TaskController extends Controller
 
     public function list(Request $request): View
     {
-        return view('tasks', ['tasks' => task::where('user', $request->user()->id)->get()]);
+
+        $query = task::where('user', $request->user()->id);
+
+        if($request->query('priority')) {
+            $query->where('priority', $request->query('priority'));
+        }
+        if($request->query('status')) {
+            $query->where('status', $request->query('status'));
+        }
+        if($request->query('dateFrom')) {
+            $query->where('deadline', '>=', $request->query('dateFrom'));
+        }
+        if($request->query('dateTo')) {
+            $query->where('deadline', '<=',$request->query('dateTo'));
+        }
+
+        return view('tasks', [
+            'tasks' => $query->get(),
+            'filters' => $request->query()
+    ]);
     }
 
-    public function delete(Request $request, int $id) 
+    public function delete(Request $request, int $id)
     {
         $task = task::find($id);
 
-        if(!$task->user === $request->user()->id) {
+        if (!$task->user === $request->user()->id) {
             return redirect(route('tasks'));
         }
 
