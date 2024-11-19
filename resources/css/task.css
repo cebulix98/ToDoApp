@@ -1,0 +1,18 @@
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+form button {
+    width: 200px;
+    border: 1px solid #333;
+    align-self: center;
+    margin: 10px;
+    text-align: center;
+}

@@ -1,0 +1,24 @@
+.tasks-list td {
+    text-align: center;
+    padding: 15px 0px;
+}
+.tasks-list tr {
+    box-shadow: 2px 4px 2px -4px #33333399;
+    margin-bottom: 10px;
+}
+.tasks-list .description {
+    width: 50%;
+    text-align: left;
+}
+.tasks-list {
+    border-collapse:separate; 
+    border-spacing: 15px;
+}
+
+button {
+    width: 100px;
+    padding: 4px;
+    border: 1px solid #333;
+    margin: 5px;
+    
+}
