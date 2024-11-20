@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SharedTask;
 use App\Models\task;
-use App\Models\User;
-use Illuminate\Container\Attributes\Auth;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
@@ -88,6 +89,10 @@ class TaskController extends Controller
             $query->where('deadline', '<=',$request->query('dateTo'));
         }
 
+        $query->with(['shareToken' => function($query) {
+            $query->where('validTo', '>', Carbon::now());
+        }]);
+
         return view('tasks', [
             'tasks' => $query->get(),
             'filters' => $request->query()
@@ -105,5 +110,42 @@ class TaskController extends Controller
         $task->delete();
 
         return redirect(route('tasks'));
+    }
+
+    public function share(Request $request, int $id)
+    {
+        $task = task::where('id', $id)->with('shareToken')->first();
+
+        dd($task);
+
+        if (!$task->user === $request->user()->id) {
+            return redirect(route('tasks'));
+        }
+
+        $token = SharedTask::create([
+            'task' => $task->id,
+            'token' => Str::random(),
+            'validTo' => Carbon::today()->addDays(7)
+        ]);
+
+        return redirect(route('task.shared', ['token' => $token->token]));
+    }
+
+    public function shared(Request $request, string $token)
+    {
+        $sharedTask = SharedTask::where('token', $token)->where('validTo', '>', Carbon::today())->first();
+
+        if ($sharedTask === null) {
+            if($request->user()) {
+                return redirect(route('tasks'));
+            }
+            return redirect(route('welcome'));
+        }
+
+        $task = task::find($sharedTask->task);
+
+        return view('taskShare', [
+            'task' => $task
+        ]);
     }
 }

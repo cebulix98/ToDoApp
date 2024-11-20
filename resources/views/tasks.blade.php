@@ -87,8 +87,15 @@
                                     {{ $task->deadline }}
                                 </td>
                                 <td class="actions">
-                                    <a href="{{ route('task.edit', $task->id) }}"><x-primary-button class="my-2">Edytuj</x-primary-button></a>
-                                    <x-primary-button class="my-2">Udostępnij</x-primary-button>
+                                    <a href="{{ route('task.edit', $task->id) }}"><x-primary-button
+                                            class="my-2">Edytuj</x-primary-button></a>
+                                    @if ($task->shareToken)
+                                        <a target="blank" href="{{ route('task.shared', $task->shareToken->token) }}"><x-primary-button
+                                                class="my-2">Udostępnij</x-primary-button></a>
+                                    @else
+                                        <a target="blank" href="{{ route('task.share', $task->id) }}"><x-primary-button
+                                                class="my-2">Udostępnij</x-primary-button></a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
