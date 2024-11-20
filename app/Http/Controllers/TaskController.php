@@ -114,9 +114,7 @@ class TaskController extends Controller
 
     public function share(Request $request, int $id)
     {
-        $task = task::where('id', $id)->with('shareToken')->first();
-
-        dd($task);
+        $task = task::find($id);
 
         if (!$task->user === $request->user()->id) {
             return redirect(route('tasks'));
