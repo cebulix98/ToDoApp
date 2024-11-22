@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class task extends Model
+class Task extends Model
 {
     /** @use HasFactory<\Database\Factories\TaskFactory> */
     use HasFactory;
@@ -18,11 +18,11 @@ class task extends Model
 
     public function useraa(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user');
+        return $this->belongsTo(related: User::class, foreignKey: 'user');
     }
 
     public function shareToken(): HasOne
     {
-        return $this->hasOne(SharedTask::class, 'task', 'id');
+        return $this->hasOne(related: SharedTask::class, foreignKey: 'task', localKey: 'id');
     }
 }

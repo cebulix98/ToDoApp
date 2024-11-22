@@ -11,6 +11,6 @@ class SharedTask extends Model
 
     public function taskk(): BelongsTo
     {
-        return $this->belongsTo(task::class, 'id', 'task');
+        return $this->belongsTo(related: task::class, foreignKey: 'id', ownerKey: 'task');
     }
 }

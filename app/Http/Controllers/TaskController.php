@@ -2,148 +2,98 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SharedTask;
-use App\Models\task;
-use Carbon\Carbon;
+use App\Http\Requests\TaskRequest;
+use App\Services\TaskService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
+use Illuminate\Http\RedirectResponse;
 
 class TaskController extends Controller
 {
+    use AuthorizesRequests;
+
+    private TaskService $taskService;
+
+    public function __construct(TaskService $taskService)
+    {
+        $this->taskService = $taskService;
+    }
 
     public function create(): View
     {
-        return view('taskNew');
+        return view(view: 'taskNew');
     }
 
-    public function store(Request $request)
+    public function store(TaskRequest $request): RedirectResponse
     {
-        $request->validate([
-            'title' => ['string', 'required', 'max:255'],
-            'description' => ['string', 'nullable'],
-            'deadline' => ['date', 'required'],
-            'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
-            'status' => ['required', Rule::in(['toDo', 'inProgress', 'done'])]
-        ]);
+        $this->taskService->createTask(data: $request->validated(), userId: $request->user()->id);
 
-        $task = task::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-            'priority' => $request->priority,
-            'status' =>  $request->status,
-            'user' => $request->user()->id
-        ]);
-
-        return redirect(route('tasks'));
+        return redirect()->route(route: 'tasks');
     }
 
     public function edit(int $id): View
     {
-        return view('taskEdit', [
-            'task' => task::find($id)
-        ]);
+        $task = $this->taskService->getTask(id: $id);
+
+        $this->authorize(ability: 'view', arguments: $task);
+
+        return view(view: 'taskEdit', data: ['task' => $task]);
     }
 
-    public function update(Request $request, int $id)
+    public function update(TaskRequest $request, int $id): RedirectResponse
     {
-        $request->validate([
-            'title' => ['string', 'required', 'max:255'],
-            'description' => ['string'],
-            'deadline' => ['date', 'required'],
-            'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
-            'status' => ['required', Rule::in(['toDo', 'inProgress', 'done'])]
-        ]);
+        $task = $this->taskService->getTask(id: $id);
 
-        task::updateOrCreate(
-            ['id' => $id],
-            [
-                'title' => $request->title,
-                'description' => $request->description,
-                'deadline' => $request->deadline,
-                'priority' => $request->priority,
-                'status' => $request->status
-            ]
-        );
+        $this->authorize(ability: 'update', arguments: $task);
 
-        return redirect(route('tasks'));
+        $this->taskService->updateTask(task: $task, data: $request->validated());
+
+        return redirect()->route(route: 'tasks');
     }
 
     public function list(Request $request): View
     {
+        $tasks = $this->taskService->getFilteredTasks(userId: $request->user()->id, filters: $request->query());
 
-        $query = task::where('user', $request->user()->id);
-
-        if($request->query('priority')) {
-            $query->where('priority', $request->query('priority'));
-        }
-        if($request->query('status')) {
-            $query->where('status', $request->query('status'));
-        }
-        if($request->query('dateFrom')) {
-            $query->where('deadline', '>=', $request->query('dateFrom'));
-        }
-        if($request->query('dateTo')) {
-            $query->where('deadline', '<=',$request->query('dateTo'));
-        }
-
-        $query->with(['shareToken' => function($query) {
-            $query->where('validTo', '>', Carbon::now());
-        }]);
-
-        return view('tasks', [
-            'tasks' => $query->get(),
-            'filters' => $request->query()
-    ]);
+        return view(view: 'tasks', data: [
+            'tasks' => $tasks,
+            'filters' => $request->query(),
+        ]);
     }
 
-    public function delete(Request $request, int $id)
+    public function delete(int $id): RedirectResponse
     {
-        $task = task::find($id);
+        $task = $this->taskService->getTask(id: $id);
 
-        if (!$task->user === $request->user()->id) {
-            return redirect(route('tasks'));
-        }
+        $this->authorize(ability: 'delete', arguments: $task);
 
         $task->delete();
 
-        return redirect(route('tasks'));
+        return redirect()->route(route: 'tasks');
     }
 
-    public function share(Request $request, int $id)
+    public function share(Request $request, int $id): RedirectResponse
     {
-        $task = task::find($id);
+        $task = $this->taskService->getTask(id: $id);
 
-        if (!$task->user === $request->user()->id) {
-            return redirect(route('tasks'));
-        }
+        $this->authorize(ability: 'delete', arguments: $task);
 
-        $token = SharedTask::create([
-            'task' => $task->id,
-            'token' => Str::random(),
-            'validTo' => Carbon::today()->addDays(7)
-        ]);
+        $token = $this->taskService->shareTask(task: $task, userId: $request->user()->id);
 
-        return redirect(route('task.shared', ['token' => $token->token]));
+        return redirect()->route(route: 'task.shared', parameters: ['token' => $token]);
     }
 
-    public function shared(Request $request, string $token)
+    public function shared(Request $request, string $token): RedirectResponse|View
     {
-        $sharedTask = SharedTask::where('token', $token)->where('validTo', '>', Carbon::today())->first();
+        $task = $this->taskService->getSharedTask(token: $token);
 
-        if ($sharedTask === null) {
-            if($request->user()) {
-                return redirect(route('tasks'));
-            }
-            return redirect(route('welcome'));
+        if (!$task) {
+            return $request->user()
+                ? redirect()->route(route: 'tasks')
+                : redirect()->route(route: 'welcome');
         }
 
-        $task = task::find($sharedTask->task);
-
-        return view('taskShare', [
-            'task' => $task
-        ]);
+        return view(view: 'taskShare', data: ['task' => $task]);
     }
 }
